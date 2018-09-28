@@ -11,17 +11,62 @@ class MoviesController < ApplicationController
   end
 
   def index
+    
+    #Initialize relavant variables
+    @all_ratings = Movie.ratings
+    @checkBoxRatings = Movie.ratings
     @movies = Movie.all
+    
+    
+    #Conditions for check boxes
+    if params['ratings']
+      @checkBoxRatings = params['ratings'].keys
+      session['ratings'] = params['ratings']
+    elsif session['ratings']
+      @checkBoxRatings = session['ratings'].keys
+      needRedirect = true
+    end
+    
+    #Filter movies by checks
+    @movies = @movies.where({rating: @checkBoxRatings})
+    
+    
+    #Check Params first for two sort conditions
+    if params[:sortKey] == 'title'
+      @movies = @movies.order('title')
+      session[:sortKey] = 'title'
+    elsif params[:sortKey] == 'date'
+      @movies = @movies.order('release_date')
+      session[:sortKey] = 'date'
+    
+    #If none look at session 
+    elsif session[:sortKey] == 'title'
+      @movies = @movies.order('title')
+      needRedirect = true
+    elsif session[:sortKey] == 'date'
+      @movies = @movies.order('release_date')
+      needRedirect = true
+    end
+    
+    
+    #Redirect if neeed
+    if needRedirect
+      flash.keep
+      redirect_to(movies_path(ratings: session[:ratings], sortKey: session[:sortKey]))      
+    end
+    
   end
 
   def new
     # default: render 'new' template
   end
 
+
   def create
     @movie = Movie.create!(movie_params)
     flash[:notice] = "#{@movie.title} was successfully created."
     redirect_to movies_path
+
   end
 
   def edit
